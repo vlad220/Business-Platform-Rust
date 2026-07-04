@@ -81,9 +81,9 @@ D:\business-platform-rust\
 | Method | Endpoint | Description | Requires Auth | Public |
 |--------|----------|-------------|---------------|---------|
 | POST | `/api/v1/auth/register` | Регистрация | ❌ | ✅ |
-| POST | `/api/v1/auth/login` | Логин | ❌ | ✅ |
-| POST | `/api/v1/auth/logout` | Выход | ✅ | ❌ |
-| POST | `/api/v1/auth/refresh` | Обновление токена | ❌ | ✅ |
+| POST | `/api/v1/auth/login`    | Логин | ❌ | ✅ |
+| POST | `/api/v1/auth/logout`   | Выход | ✅ | ❌ |
+| POST | `/api/v1/auth/refresh`  | Обновление токена | ❌ | ✅ |
 | POST | `/api/v1/auth/oauth/yandex` | OAuth Яндекс | ❌ | ✅ |
 | POST | `/api/v1/auth/oauth/google` | OAuth Google | ❌ | ✅ |
 | POST | `/api/v1/auth/oauth/vk` | OAuth ВКонтакте | ❌ | ✅ |
@@ -93,16 +93,16 @@ D:\business-platform-rust\
 | Method | Endpoint | Description | Requires Auth | Public |
 |--------|----------|-------------|---------------|---------|
 | GET | `/api/v1/ads/categories` | Категории объявлений | ❌ | ✅ |
-| GET | `/api/v1/ads/listings` | Объявления | ❌ | ✅ |
-| POST | `/api/v1/ads/listings` | Создать объявление | ✅ | ❌ |
+| GET | `/api/v1/ads/listings`   | Объявления | ❌ | ✅ |
+| POST | `/api/v1/ads/listings`  | Создать объявление | ✅ | ❌ |
 | GET | `/api/v1/ads/listings/{id}` | Объявление | ❌ | ✅ |
 
 ### Jobs
 | Method | Endpoint | Description | Requires Auth | Public |
 |--------|----------|-------------|---------------|---------|
 | GET | `/api/v1/jobs/categories` | Категории вакансий | ❌ | ✅ |
-| GET | `/api/v1/jobs/listings` | Вакансии | ❌ | ✅ |
-| POST | `/api/v1/jobs/listings` | Создать вакансию | ✅ | ❌ |
+| GET | `/api/v1/jobs/listings`   | Вакансии | ❌ | ✅ |
+| POST | `/api/v1/jobs/listings`  | Создать вакансию | ✅ | ❌ |
 | GET | `/api/v1/jobs/listings/{id}` | Вакансия | ❌ | ✅ |
 
 ### Payments
@@ -147,16 +147,16 @@ D:\business-platform-rust\
 
 ## VPS (Production)
 
-IP: `185.221.214.239` (публичный IP, не Cloudflare)
+IP: `` (публичный IP, не Cloudflare)
 
 ### SSH-доступ
 ```
 # Подключение
-ssh root@185.221.214.239
+ssh 
 
 # SSH-туннель (для локального доступа к БД)
-# Прокинуть порт 5433 → VPS:5432
-ssh -L 5433:127.0.0.1:5432 root@185.221.214.239
+# Прокинуть порт 
+ssh 
 ```
 
 ### Управление сервисами (на VPS)
@@ -174,18 +174,18 @@ journalctl -u business-platform -f
 scp -r .cargo api-gateway libs migrations services Cargo.toml Cargo.lock root@185.221.214.239:/opt/platform/src/
 
 # 2. Собрать на VPS
-ssh root@185.221.214.239 "export HOME=/root; source $HOME/.cargo/env; cd /opt/platform/src && cargo build --release --bin api-gateway"
+ssh root@ "export HOME=/root; source $HOME/.cargo/env; cd /opt/platform/src && cargo build --release --bin api-gateway"
 
 # 3. Заменить бинарник и перезапустить
-ssh root@185.221.214.239 "cp /opt/platform/src/target/release/api-gateway /opt/platform/api-gateway && chmod +x /opt/platform/api-gateway && systemctl restart platform"
+ssh root@ "cp /opt/platform/src/target/release/api-gateway /opt/platform/api-gateway && chmod +x /opt/platform/api-gateway && systemctl restart platform"
 ```
 
 ### Параметры VPS
 | Item | Value |
 |------|-------|
-| IP | `185.221.214.239` |
-| SSH | `root@185.221.214.239` / пароль: `EK1pqJ6fi6` |
-| API | `http://185.221.214.239:8080` |
+| IP | `` |
+| SSH | `root@` / пароль: `` |
+| API | `` |
 
 ### Безопасность VPS (применено 2026-07-02)
 - **Firewall**: `ufw allow 22,80,443/tcp; ufw enable`
@@ -197,14 +197,14 @@ ssh root@185.221.214.239 "cp /opt/platform/src/target/release/api-gateway /opt/p
 ### PostgreSQL на VPS
 - Host: `127.0.0.1` / Port: `5432` (на самом VPS)
 - Host: `localhost` / Port: `5433` (через SSH-туннель с Windows)
-- User: `baza220_user` / Pass: `ZAZ968laga`
-- DB: `baza220`
+- User: `` / Pass: ``
+- DB: ``
 
 **Команды для работы (на VPS):**
 ```bash
 sudo -u postgres psql -d baza220
-pg_dump -U baza220_user -d baza220 > backup.sql
-psql -U baza220_user -d baza220 -f backup.sql
+pg_dump -U_user -d baza220 > backup.sql
+psql -U _user -d baza220 -f backup.sql
 ```
 
 ---
@@ -281,10 +281,10 @@ psql -U baza220_user -d baza220 -f backup.sql
 **Загрузка новых APK:**
 ```bash
 # Работа
-scp .../Работа-debug.apk root@185.221.214.239:/var/www/apk/jobs/latest.apk
+scp .../Работа-debug.apk root@:/var/www/apk/jobs/latest.apk
 
 # Объявления
-scp .../app-debug.apk root@185.221.214.239:/var/www/apk/ads/latest.apk
+scp .../app-debug.apk root@:/var/www/apk/ads/latest.apk
 ```
 
 ---
@@ -685,234 +685,3 @@ updated_at TIMESTAMPTZ DEFAULT NOW()
 - Установлен корректный маршрут для дашборда по пути '/' в контексте префикса '/panel/'
 - Обновлены файлы панели управления на сервере
 - Проверена корректная работа обоих адресов: https://vsem72.ru/panel/ и https://vsem72.ru/panel/panel
-
-## Обновления от 2026-07-04
-
-### Исправление проблемы с доступом к панели управления
-
-**Тип операции**: Обновление конфигурации Nginx и файлов приложения
-
-**Цель**: Исправление проблемы с входом на веб-сайт vsem72 точка ру в раздел администратора по адресу https://vsem72.ru/panel/login
-
-**Описание проблемы**: 
-При попытке входа на веб-сайт vsem72 точка ру в раздел администратора возникала проблема с аутентификацией. Проблема была связана с некорректной обработкой маршрутов в конфигурации Nginx для подкаталога /panel/. Использовалось правило перезаписи `rewrite ^/panel/(.*)$ /$1 break;`, которое удаляло префикс /panel/, создавая конфликт между тем, как Nginx обрабатывал маршруты, и тем, как Vue Router ожидал их получить.
-
-**Дополнительная проблема**:
-Белый экран на странице входа был вызван неправильной настройкой базового пути для статических ресурсов. Файл index.html не содержал тег <base href="/panel/">, что приводило к неправильной загрузке CSS и JS файлов.
-
-**Влияние**:
-- Исправление проблемы с входом в панель управления
-- Корректная работа всех маршрутов в подкаталоге /panel/
-- Обеспечение правильной функциональности Single Page Application (SPA)
-- Исправление белого экрана при загрузке приложения
-
-**Изменения в файле `infra/nginx/vsem72.ru.conf`**:
-- Удалена строка `rewrite ^/panel/(.*)$ /$1 break;` из блока location /panel/
-- Заменено `root /var/www/pwa;` на `alias /var/www/pwa/;` для правильного сопоставления URL с файловой системой
-- Изменено `try_files $uri /index.html =404;` на `try_files $uri $uri/ /panel/index.html =404;` для обеспечения корректной обработки маршрутов Vue Router
-
-**Изменения в файле `pwa-panel/index.html`**:
-- Добавлен тег `<base href="/panel/">` для корректной загрузки статических ресурсов из подкаталога /panel/
-
-**Инструкция по применению изменений**:
-1. Скопировать обновленный файл конфигурации на сервер
-2. Пересобрать приложение pwa-panel с учетом нового базового пути
-3. Скопировать собранные файлы приложения на сервер
-4. Выполнить проверку синтаксиса: `sudo nginx -t`
-5. Перезапустить Nginx: `sudo systemctl reload nginx`
-
-```
-
-## Команды запуска и деплоя
-
-### Полный деплой проекта на VPS
-
-Для полного деплоя проекта на VPS выполните:
-
-```
-.\run.ps1 -DeployFull
-```
-
-### Обновление панели администратора на сервере
-
-Для обновления панели администратора на сервере выполните:
-
-```
-# Обновление только панели администратора (без полного деплоя)
-cd pwa-panel
-npm install
-npm run build
-# Затем вручную скопируйте файлы из dist/ на сервер в директорию /var/www/pwa/
-```
-
-### Синхронизация JSONL-файлов с VPS
-
-Для синхронизации JSONL-файлов с VPS выполните:
-
-```
-.\run.ps1 -SyncFeedback
-```
-
----
-
-## Обновления от 2026-07-05
-
-### Подготовка vk-ads и ok-ads к деплою + бэкенд OAuth
-
-**vk-ads (VK Mini App):**
-- Добавлен `base: '/vk-ads/'` в `vite.config.ts` — пути статики корректны на продакшене
-- Добавлен `<base href="/vk-ads/">` в `index.html`
-- `app_id: 0` заменён на `VITE_VK_APP_ID` (env-переменная в `vite.config.ts`)
-- Исправлен `scope: ''` → `scope: 'email'` в интерцепторе API
-- Синхронизирован scope между `api/index.ts` и `stores/auth.ts`
-- `categoryId` → `category_id` в `CreateListing.vue` (snake_case для API)
-- `VITE_VK_APP_ID`, `VITE_WS_URL` добавлены в `define` конфига
-
-**ok-ads (OK Mini App):**
-- Добавлен `base: '/ok-ads/'` в `vite.config.ts` + `<base>` в `index.html`
-- OK SDK подключён (`fapi.js` CDN в `index.html`, `FAPI.init()` в `main.ts`)
-- Создан `tsconfig.json` (TypeScript конфиг)
-- Добавлен `window.FAPI` в `env.d.ts`
-- Все 5 view-компонентов переписаны — заглушки заменены на рабочий код:
-  - Feed: поиск, фильтр категории, сортировка, API-запросы
-  - ListingDetail: загрузка и отображение объявления
-  - Favorites: список избранного
-  - CreateListing: форма создания (title, description, price, category)
-  - Profile: отображение пользователя, выход
-- `stores/auth.ts`: реализована `loginViaOK()` через `FAPI.requireLogin()`
-- `api/index.ts`: добавлены JWT-интерцептор, `fetchCategories`, `createListing`, `fetchFavorites`, `toggleFavorite`
-- `App.vue`: переписан на `authStore` вместо локального `ref`
-- Оранжевая тема OK (`#ed8b00`)
-- Добавлены `VITE_WS_URL`, `VITE_OK_APP_KEY`, `VITE_CITY_LAT`, `VITE_CITY_LON` в конфиг
-
-**Бэкенд (Rust):**
-- Реализован `POST /api/v1/auth/oauth/vk` — принимает `{ code, vk_id, email, name }`, ищет/создаёт пользователя, возвращает JWT
-- Реализован `POST /api/v1/auth/oauth/ok` — принимает `{ access_token }`, создаёт пользователя, возвращает JWT
-- Добавлены структуры `OAuthVKRequest` и `OAuthOKRequest` в `models.rs`
-- Маршруты зарегистрированы в `main.rs`
-
-**Документация:**
-- `AGENTS.md`: обновлены таблица эндпоинтов, секции vk/ok, добавлен раздел обновлений
-- `vk-ads/README.md`, `ok-ads/README.md`: убраны `todo!()` секции, добавлены описания готовых эндпоинтов
-- `docs/VK_REGISTRATION.md`, `docs/OK_REGISTRATION.md`: убраны `todo!()`, обновлены структуры проектов
-
----
-
-## Обновления от 2026-07-05 (часть 2)
-
-### Создан vk-rabota — VK Mini App «Работа»
-
-**Тип операции**: Создание нового VK Mini App
-
-**vk-rabota (VK Mini App Работа):**
-- Создан новый проект `vk-rabota/` на базе шаблона vk-ads
-- `index.html`: base `/vk-rabota/`, title «Работа — Тюмень»
-- `vite.config.ts`: порт 3003, base `/vk-rabota/`, env-переменные (API, WS, город, VK App ID)
-- `package.json`: зависимости Vue 3 + VK Bridge + Axios + Pinia
-- `api/index.ts`: endpoints для `/jobs/vacancies`, `/jobs/categories`, `/jobs/favorites`
-- `App.vue`: заголовок «Работа — Тюмень», 4 кнопки навигации (Лента, Избранное, +, Профиль)
-- `views/Feed.vue`: лента вакансий (поиск, фильтр категории, сортировка зарплата/дата)
-- `views/VacancyDetail.vue`: детальный просмотр вакансии (зарплата, тип, формат)
-- `views/Favorites.vue`: избранное
-- `views/CreateVacancy.vue`: создание вакансии (название, описание, зарплата от/до, тип занятости, формат работы, категория)
-- `views/Profile.vue`: профиль + выход
-- `stores/auth.ts`: VK-авторизация через VK Bridge
-
-**Документация (маппинг Android → VK):**
-- `vk-ads/README.md`: обновлён — полная таблица реализованных/нереализованных функций, сравнение Android экранов, список всех API endpoints, описание связей с Android
-- `vk-rabota/README.md`: создан — полный маппинг Android-приложения Работа на VK Mini App, таблица статуса, API endpoints, структура проекта, поля вакансии
-
-**Статус vk-ads:** ~159 kB gzip, 5 табов, WebSocket чат, feedback, подписка, auth email. Не хватает: карта, пагинация (load more), медиа в CreateListing.
-
-**Статус vk-rabota:** ~159 kB gzip, 5 табов, WebSocket чат, feedback, подписка, auth email, отклик на вакансию. Не хватает: карта, пагинация, медиа в CreateVacancy.
-
-**Следующие шаги:**
-1. Прописать App ID `54664923` в `vk-ads/vite.config.ts` перед деплоем
-2. Зарегистрировать новое приложение «Работа — Тюмень» в VK Dev, получить App ID
-3. Настроить Nginx локацию `/vk-rabota/` на VPS (сейчас только `/vk-ads/`)
-4. Задеплоить оба Mini App на VPS
-
----
-
-## Обновления от 2026-07-05 (часть 3)
-
-### Допилены VK Mini Apps до функционала Android
-
-**vk-ads (Объявления):**
-- **Чат WebSocket**: `stores/chat.ts` — WebSocket соединение, отправка/получение сообщений
-- `views/ChatList.vue` — список диалогов (загрузка с API)
-- `views/ChatRoom.vue` — комната чата (WebSocket + HTTP fallback)
-- **Обратная связь**: `views/Feedback.vue` — выбор типа, тема, описание → `POST /feedback/send`
-- **Подписка**: `views/Subscription.vue` — статус, оформление 200 ₽/мес → Robokassa
-- **Auth email/телефон**: `views/Login.vue` + `views/Register.vue` + `views/ForgotPassword.vue`
-- **Профиль**: расширен — мои объявления, ссылки на подписку и feedback
-- **Навигация 5 табов**: Лента, Избранное, Чаты, Ошибки, Профиль
-- **API клиент**: полный — chat, feedback, subscription, auth, media, favorites (CRUD)
-- App.vue: кнопки VK-вход + email-вход, 5 кнопок нижней навигации
-
-**vk-rabota (Работа):**
-- Все те же функции, что и в vk-ads (чат, feedback, подписка, auth, профиль)
-- **Отклик на вакансию**: кнопка в VacancyDetail.vue → `POST /jobs/applications`
-- **Мои вакансии**: в профиле (`GET /jobs/vacancies?my=true`)
-- API: `/jobs/vacancies`, `/jobs/categories`, `/jobs/favorites`, `/jobs/applications`
-
-**Иконки:**
-- `vk-ads/public/icon.png` — из `Иконки/объявления 576х576.png` (560 KB, 576×576)
-- `vk-rabota/public/icon.png` — из `Иконки/работа.jpg` (318 KB, 576×576, создан скриптом)
-
-**Документация:**
-- `docs/VK_REGISTRATION.md` — обновлён: оба приложения (vk-ads App ID 54664923 + vk-rabota чек-лист)
-- `vk-ads/README.md` — App ID 54664923, инструкция по смене
-- `vk-rabota/README.md` — чек-лист создания приложения, ссылка на docs/VK_REGISTRATION.md
-
-**Сборка:** оба проекта собираются успешно (~159 kB gzip, 124 модуля)
-
----
-
-## Обновления от 2026-07-05 (часть 4)
-
-### Исправление белого экрана VK Mini Apps
-
-**Проблема:** `import bridge from '@vkontakte/vk-bridge'` на верхнем уровне JS-бандла падал вне VK (библиотека обращается к `window.parent` при инициализации). Вся сборка не монтировалась → белый экран.
-
-**Фикс:**
-- `main.ts`: статический `import bridge` заменён на динамический `import('@vkontakte/vk-bridge')` с `try/catch`
-- `api/index.ts`: создана `getBridge()` — ленивая загрузка VK Bridge
-- `stores/auth.ts`: то же самое — VK Bridge загружается только при вызове `loginViaVK()`
-
-**Файлы:** `vk-ads/src/{main.ts,api/index.ts,stores/auth.ts}` и `vk-rabota/src/{main.ts,api/index.ts,stores/auth.ts}`
-
-### Исправление роутера (base path)
-
-**Проблема:** Vue Router без `base` не находил маршрут `/` при загрузке с `/vk-ads/` или `/vk-rabota/`. `router-view` был пуст — визуально белый экран (только шапка + меню).
-
-**Фикс:** добавлен `base: '/vk-ads/'` и `base: '/vk-rabota/'` в `createWebHistory()`.
-
-**Файлы:** `vk-ads/src/router/index.ts`, `vk-rabota/src/router/index.ts`
-
-### Демо-режим
-
-- Включён по умолчанию, если нет JWT-токена (`localStorage.demo === 'true'`)
-- 5 демо-объявлений и 5 демо-вакансий с реалистичными данными (Тюмень)
-- Демо-данные для: ленты, детального просмотра, избранного, чатов, профиля, подписки
-- Оранжевая метка **«ДЕМО»** в шапке — клик для выхода из демо-режима
-- Авто-выход из демо при логине (получении реального JWT)
-- **Файл демо-данных:** `vk-ads/src/demoData.ts`, `vk-rabota/src/demoData.ts`
-- **API перехватчик:** `api/index.ts` — каждая экспортированная функция проверяет `isDemo()` и возвращает мок-данные без HTTP-запроса
-
-### Авторизация по телефону (email или телефон)
-
-**Бэкенд:**
-- `POST /api/v1/auth/login` — теперь принимает email ИЛИ телефон. Если введён `+7...` или только цифры — ищет по `phone` в БД
-- `POST /api/v1/auth/register` — добавлено поле `phone` (опционально). Проверка уникальности: дубли невозможны (UNIQUE constraint + явная проверка)
-- Номер очищается от форматирования (остаются только цифры) перед сохранением
-- **Файлы:** `backend/api-gateway/src/routes/auth.rs` (login + register), `backend/api-gateway/src/models.rs` (RegisterRequest.phone)
-
-**Фронтенд (оба VK Mini App):**
-- Login.vue: поле «Email или телефон» — работает для обоих типов (бэкенд определяет автоматически)
-- Register.vue: добавлено поле «Телефон (необязательно)» — передаётся на `POST /auth/register`
-- Без SMS-подтверждения (пока)
-
-**БД:** `auth.users.phone VARCHAR(20) UNIQUE` — уже был, используется
-
-**Принцип:** пользователь регистрируется с email + опциональным телефоном. При логине может использовать email или телефон. Телефон уникален — повторная регистрация с тем же номером невозможна.

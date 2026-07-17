@@ -21,6 +21,40 @@ Android/Vue → Rust бэкенд (api-gateway, порт 8080) → PostgreSQL + 
 
 ---
 
+
+## Lokalная среда (Windows)
+- **WSL2**: `D:\wsl\ext4.vhdx` — Ubuntu 22.04 для сборки Linux-бинарников (Rust)
+- **Rust (Windows)**: `D:\rust\.cargo` + `D:\rust\.rustup` — Windows toolchain (MSVC)
+- **Rust (WSL)**: `/root/.cargo/` — Linux toolchain (установлен через rustup внутри WSL)
+- **Код проекта**: `D:\business-platform-rust\` (монтируется в WSL как `/mnt/d/business-platform-rust/`)
+
+## Стек технологий
+
+| Компонент | Технология |
+|-----------|-----------|
+| **Бэкенд** | Rust (Axum 0.7, Tokio, SQLx, reqwest, tower-http) |
+| **База данных** | PostgreSQL 16 (на VPS), **pgrust** (PG 18.3 на Rust — тестируется) |
+| **Фронтенд (PWA)** | Vue 3, TypeScript, Vite, Pinia, Vue Router |
+| **Mini Apps** | Vue 3 + VK Bridge (@vkontakte/vk-bridge) / OK SDK / Telegram WebApp |
+| **Android (5 приложений)** | Kotlin, Jetpack Compose, Hilt (4 из 5), Room, Retrofit, OkHttp |
+| **Аудио-сервис** | Zig (stdin/stdout JSON-line протокол) — распознавание, синтез, анализ |
+| **Агрегатор** | Rust (Axum 0.7, scraper, reqwest) — парсинг hh.ru, Avito, SuperJob, CIAN |
+| **Чеки ФНС (НПД)** | Node.js + lknpd-nalog-api-ts (TypeScript библиотека) |
+| **Платежи** | Вручную: карта ВТБ / QR, без агрегатора. Самозанятый (ИНН 720304206284) |
+| **Сервер** | VPS: 2 CPU, 4 GB RAM, 30 GB SSD, Ubuntu 24.04, Nginx, systemd |
+| **CI/CD** | `run.ps1` (Windows dev), `deploy.ps1` (SSH на VPS)
+
+## Структура кода
+
+**Все новые модули/сервисы — в отдельных папках со своей документацией внутри самой папки.**
+- Rust роуты: каждый сервис в своём `.rs` файле (например `routes/bitrix24.rs`, `routes/one_c.rs`)
+- Сервисы: каждый в своей папке `services/название/` со своим `Cargo.toml`
+- Миграции БД: описание схемы в `migrations/`
+- Android: каждый экран/фича — отдельная папка с Screen + ViewModel
+- Vue: каждая страница — отдельный `.vue` файл
+
+**Правило:** если модуль занимает >100 строк или делает что-то одно — он должен быть в отдельном файле. Запрещено мешать разное в одном файле.
+
 ## Структура проекта
 
 ```

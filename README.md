@@ -1,381 +1,191 @@
-# Business Platform Rust
+# Business Platform
 
-Бизнес-платформа — экосистема сервисов для Тюмени: объявления, вакансии, складской учёт, колл-центр, CRM для менеджеров продаж, чаты, интеграции с 1С и Битрикс24.
+Экосистема сервисов для бизнеса в Тюмени. В production на VPS, реальные пользователи.
 
----
-
-## Архитектура
-
-```
-Android/Vue → Rust бэкенд (api-gateway, порт 8080) → PostgreSQL + Redis
-                                                      → Bitrix24 REST API
-                                                      → 1С API
-                                                      → Telegram Bot API
-                                                      → YandexGPT / GigaChat
-```
-
-**Бэкенд:** Rust (Axum + SQLx + Tokio) — микросервисная архитектура
-**Фронтенды:** Vue 3 + TypeScript (PWA, VK Mini Apps, OK Mini Apps, Telegram Mini Apps)
-**Мобильные:** Kotlin + Compose + Hilt/Room (5 Android-приложений)
-**Инфраструктура:** Nginx, systemd, PostgreSQL 18, Redis
+![Rust](https://img.shields.io/badge/Rust-1.96-orange?logo=rust)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin)
+![Android](https://img.shields.io/badge/Android-34-3DDC84?logo=android)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
+![Nginx](https://img.shields.io/badge/Nginx-1.24-009639?logo=nginx)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu)
+![Zig](https://img.shields.io/badge/Zig-0.13-F7A41D?logo=zig)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 ---
 
+## Стек
 
-## Lokalная среда (Windows)
-- **WSL2**: `D:\wsl\ext4.vhdx` — Ubuntu 22.04 для сборки Linux-бинарников (Rust)
-- **Rust (Windows)**: `D:\rust\.cargo` + `D:\rust\.rustup` — Windows toolchain (MSVC)
-- **Rust (WSL)**: `/root/.cargo/` — Linux toolchain (установлен через rustup внутри WSL)
-- **Код проекта**: `D:\business-platform-rust\` (монтируется в WSL как `/mnt/d/business-platform-rust/`)
-
-## Стек технологий
-
-| Компонент | Технология |
-|-----------|-----------|
-| **Бэкенд** | Rust (Axum 0.7, Tokio, SQLx, reqwest, tower-http) |
-| **База данных** | PostgreSQL 16 (на VPS), **pgrust** (PG 18.3 на Rust — тестируется) |
-| **Фронтенд (PWA)** | Vue 3, TypeScript, Vite, Pinia, Vue Router |
-| **Mini Apps** | Vue 3 + VK Bridge (@vkontakte/vk-bridge) / OK SDK / Telegram WebApp |
-| **Android (5 приложений)** | Kotlin, Jetpack Compose, Hilt (4 из 5), Room, Retrofit, OkHttp |
-| **Аудио-сервис** | Zig (stdin/stdout JSON-line протокол) — распознавание, синтез, анализ |
-| **Агрегатор** | Rust (Axum 0.7, scraper, reqwest) — парсинг hh.ru, Avito, SuperJob, CIAN |
-| **Чеки ФНС (НПД)** | Node.js + lknpd-nalog-api-ts (TypeScript библиотека) |
-| **Платежи** | Вручную: карта ВТБ / QR, без агрегатора. Самозанятый (ИНН 720304206284) |
-| **Сервер** | VPS: 2 CPU, 4 GB RAM, 30 GB SSD, Ubuntu 24.04, Nginx, systemd |
-| **CI/CD** | `run.ps1` (Windows dev), `deploy.ps1` (SSH на VPS)
-
-## Структура кода
-
-**Все новые модули/сервисы — в отдельных папках со своей документацией внутри самой папки.**
-- Rust роуты: каждый сервис в своём `.rs` файле (например `routes/bitrix24.rs`, `routes/one_c.rs`)
-- Сервисы: каждый в своей папке `services/название/` со своим `Cargo.toml`
-- Миграции БД: описание схемы в `migrations/`
-- Android: каждый экран/фича — отдельная папка с Screen + ViewModel
-- Vue: каждая страница — отдельный `.vue` файл
-
-**Правило:** если модуль занимает >100 строк или делает что-то одно — он должен быть в отдельном файле. Запрещено мешать разное в одном файле.
-
-## Структура проекта
-
-```
-D:\business-platform-rust\
-├── backend/                      # Rust workspace (весь бэкенд)
-│   ├── Cargo.toml                # Workspace manifest
-│   ├── api-gateway/              # Входная точка (Axum, порт 8080)
-│   │   ├── src/
-│   │   │   ├── main.rs
-│   │   │   ├── routes/           # Маршруты по модулям
-│   │   │   ├── middleware/       # Auth, CORS
-│   │   │   └── error.rs          # ApiError
-│   ├── services/                 # Независимые бинарные сервисы
-│   │   ├── ads/
-│   │   ├── auth/
-│   │   ├── payments/
-│   │   ├── notifications/
-│   │   └── ...
-│   ├── libs/                     # Shared crates (db, cache, shared)
-│   └── migrations/               # SQL миграции (PostgreSQL)
-├── pwa-panel/                    # Vue 3 + TS + Vite + Pinia (порт 5173)
-├── vk-ads/                       # VK Mini App «Объявления»
-├── vk-rabota/                    # VK Mini App «Работа»
-├── ok-ads/                       # OK Mini App «Объявления»
-├── ok-rabota/                    # OK Mini App «Работа»
-├── tg-ads/                       # Telegram Mini App «Объявления»
-├── tg-rabota/                    # Telegram Mini App «Работа»
-├── vk-bridge-ads/                # Универсальное Mini App (VK + OK) «Объявления»
-├── vk-bridge-rabota/             # Универсальное Mini App (VK + OK) «Работа»
-├── Работа/                       # Android app (Kotlin + Compose + Hilt + Room)
-├── Объявления/                   # Android app (Kotlin + Compose + Hilt + Room)
-├── call-center/                  # Vue PWA «Колл-центр» (порт 3011)
-├── call-center-kotlin/           # Android «Колл-центр»
-├── manager-sales/                # Vue PWA «Менеджер продаж» (порт 3010)
-├── manager-sales-kotlin/         # Android «Менеджер продаж»
-├── warehouse-pwa/                # Vue PWA «Склад» (порт 3020)
-├── warehouse-kotlin/             # Android «Склад» (сканер ШК + WMS)
-├── aggregator/                   # Микросервис агрегатора объявлений (порт 8090)
-├── audio-service/                # Zig-сервис обработки аудио
-├── infra/                        # Nginx, systemd, backup, deploy
-│   ├── nginx/                    # Конфиги Nginx
-│   ├── scripts/                  # Скрипты деплоя
-│   └── systemd/                  # systemd unit-файлы
-├── docs/                         # Документация
-├── mani/                         # Монетизация
-├── sbp/                          # СБП (Т-Банк API)
-├── Ошибки и предложения/         # JSONL-файлы обратной связи
-├── Иконки/                       # Иконки приложений
-├── run.ps1                       # Запуск dev-сервера (Windows)
-└── deploy.ps1                    # Интерактивный деплой на VPS
-```
+| Слой | Технологии |
+|------|-----------|
+| **Бэкенд** | Rust (Axum 0.7, Tokio, SQLx, reqwest, tower-http, Redis) |
+| **Фронтенды** | Vue 3 + TypeScript + Vite + Pinia |
+| **Android** | Kotlin + Jetpack Compose + Hilt + Room + Retrofit + CameraX + ML Kit |
+| **Mini Apps** | Vue 3 + VK Bridge / OK SDK / Telegram WebApp |
+| **БД** | PostgreSQL 16 (schema-per-app — 13 схем) |
+| **AI** | YandexGPT, GigaChat, Ollama |
+| **Парсинг** | Rust (scraper, reqwest) |
+| **Аудио** | Zig |
+| **Сервер** | Ubuntu 24.04 + Nginx + systemd |
 
 ---
 
-## Быстрый старт (локальная разработка)
+## Android
 
-### Требования
+![Android](https://img.shields.io/badge/Kotlin-Compose%2BHilt%2BRoom-7F52FF?logo=kotlin)
+![API](https://img.shields.io/badge/API-21%2B-3DDC84?logo=android)
+![AutoUpdate](https://img.shields.io/badge/Auto--update-DownloadManager-blue)
 
-- **Rust** (установить через [rustup.rs](https://rustup.rs/))
-- **PostgreSQL 16+** (БД )
-- **Redis** (порт )
-- **Node.js 20+** (для фронтендов)
+Пять приложений, унифицированная архитектура: единый шаблон экранов (AuthScreen, FeedbackScreen, ChatScreen), общий модуль авто-обновления, сквозная тёмная тема.
 
-### Запуск
+### Работа
+![APK](https://img.shields.io/badge/APK-21%20MB-lightgrey)
+![WebSocket](https://img.shields.io/badge/Chat-WebSocket-blue)
+![Search](https://img.shields.io/badge/Search-Fulltext-green)
 
-```powershell
-# Всё одной командой
-.\run.ps1
+Вакансии и резюме в Тюмени. Поиск по категориям, фильтр по зарплате/типу/формату работы, избранное, отклики, чат с работодателем, WebSocket.
 
-# Или пошагово:
-cd backend
-cargo run --bin api-gateway
-```
+### Объявления
+![APK](https://img.shields.io/badge/APK-19%20MB-lightgrey)
+![WebSocket](https://img.shields.io/badge/Chat-WebSocket-blue)
+![Categories](https://img.shields.io/badge/Categories-Hierarchy-green)
 
-### Фронтенды
+Доска объявлений. Категории, поиск, фильтры, избранное, чат между продавцом и покупателем, WebSocket.
 
-```powershell
-# PWA панель
-cd pwa-panel
-npm install
-npm run dev          # → http://localhost:5173/
+### Склад (WMS)
+![APK](https://img.shields.io/badge/APK-8%20MB-lightgrey)
+![ML Kit](https://img.shields.io/badge/Barcode-ML%20Kit-blue)
+![1C](https://img.shields.io/badge/1C-Sync-green)
 
-# Остальные PWA (каждый в своём терминале)
-cd call-center       && npm run dev   # порт 3011
-cd manager-sales     && npm run dev   # порт 3010
-cd warehouse-pwa     && npm run dev   # порт 3020
-cd vk-ads            && npm run dev   # порт 3001
-cd vk-rabota         && npm run dev   # порт 3003
-cd ok-ads            && npm run dev   # порт 3002
-cd tg-ads            && npm run dev   # порт 3007
-cd tg-rabota         && npm run dev   # порт 3008
-```
+Складской учёт: номенклатура, приход, отгрузка, инвентаризация, перемещения, списания. Сканер штрихкодов через камеру (ML Kit). Синхронизация с 1С.
 
----
+### Колл-центр
+![APK](https://img.shields.io/badge/APK-17%20MB-lightgrey)
+![Bitrix24](https://img.shields.io/badge/Bitrix24-REST%20API-blue)
+![WebSocket](https://img.shields.io/badge/Chat-WebSocket-green)
 
-## API Endpoints
+Для операторов: звонки, клиенты, интеграция с Битрикс24 (контакты, сделки, активности). Чат с клиентами, WebSocket.
 
-### Auth
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| POST | `/api/v1/auth/register` | Регистрация |
-| POST | `/api/v1/auth/login` | Вход (email или телефон) |
-| POST | `/api/v1/auth/logout` | Выход |
-| POST | `/api/v1/auth/refresh` | Обновление токена |
-| POST | `/api/v1/auth/oauth/yandex` | OAuth Яндекс |
-| POST | `/api/v1/auth/oauth/vk` | OAuth ВКонтакте |
-| POST | `/api/v1/auth/oauth/ok` | OAuth Одноклассники |
-| POST | `/api/v1/auth/send-code` | Отправить SMS-код |
-| POST | `/api/v1/auth/verify-code` | Подтвердить SMS-код |
-| GET | `/api/v1/auth/referral/stats` | Реферальная статистика |
+### Менеджер продаж
+![APK](https://img.shields.io/badge/APK-129%20MB-lightgrey)
+![Yandex Maps](https://img.shields.io/badge/Maps-Yandex-blue)
+![Bitrix24](https://img.shields.io/badge/Bitrix24-REST%20API-green)
 
-### Ads (Объявления)
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET | `/api/v1/ads/categories` | Категории |
-| GET | `/api/v1/ads/listings` | Список объявлений |
-| POST | `/api/v1/ads/listings` | Создать объявление |
-| GET | `/api/v1/ads/listings/{id}` | Детали объявления |
-
-### Jobs (Вакансии)
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET | `/api/v1/jobs/categories` | Категории |
-| GET | `/api/v1/jobs/listings` | Список вакансий |
-| POST | `/api/v1/jobs/listings` | Создать вакансию |
-| GET | `/api/v1/jobs/listings/{id}` | Детали вакансии |
-
-### Chat
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET | `/api/v1/chat/conversations` | Список бесед |
-| GET | `/api/v1/chat/messages/{conv_id}` | Сообщения |
-| POST | `/api/v1/chat/messages/{conv_id}` | Отправить сообщение |
-
-### Warehouse (Склад WMS)
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET/POST | `/api/v1/warehouse/products` | Товары |
-| GET | `/api/v1/warehouse/products/by-barcode/{barcode}` | Поиск по ШК |
-| POST | `/api/v1/warehouse/products/sync` | Синхронизация с 1С |
-| GET/POST | `/api/v1/warehouse/receipts` | Приходы |
-| GET/POST | `/api/v1/warehouse/shipments` | Отгрузки |
-| GET/POST | `/api/v1/warehouse/inventories` | Инвентаризации |
-| GET/POST | `/api/v1/warehouse/moves` | Перемещения |
-| GET/POST | `/api/v1/warehouse/write-offs` | Списания |
-
-### Audio
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| POST | `/api/v1/audio/transcribe` | Распознавание речи |
-| POST | `/api/v1/audio/analyze` | Анализ текста |
-| POST | `/api/v1/audio/synthesize` | Синтез речи |
-| GET | `/api/v1/audio/health` | Health check |
-
-### Integrations
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET/POST | `/api/v1/integrations/bitrix24/*` | Интеграция с Битрикс24 |
-| GET/POST | `/api/v1/integrations/onec/*` | Интеграция с 1С |
-
-### Bridge (Мост сообщений)
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| POST | `/api/v1/bridge/telegram/webhook` | Webhook от Telegram |
-| POST | `/api/v1/bridge/whatsapp/webhook` | Webhook от WhatsApp |
-| GET/POST/DELETE | `/api/v1/bridge/links` | Управление привязками |
-
-### Admin
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET | `/api/v1/admin/stats` | Статистика |
-| GET | `/api/v1/admin/users` | Пользователи |
-| GET/PUT | `/api/v1/admin/feedback/{id}` | Обратная связь |
-| GET/PUT | `/api/v1/admin/ai/settings` | Настройки AI |
-| GET/PUT | `/api/v1/admin/bridge/settings` | Настройки моста |
-
-### Releases
-| Method | Endpoint | Описание |
-|--------|----------|---------|
-| GET | `/api/v1/releases/latest/{app}` | Последняя версия APK |
-| GET | `/api/v1/releases/download/{app}/{file}` | Скачать APK |
+CRM для полевых менеджеров: клиенты, заказы, задачи, выездные встречи. Яндекс Карты для построения маршрутов. Интеграция с Битрикс24 и 1С.
 
 ---
 
-## Production (VPS)
+## Vue PWA
 
-**Сервер:** 
-**Домен:** `https://vsem72.ru/`
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs)
+![Pinia](https://img.shields.io/badge/State-Pinia-yellow)
+![Router](https://img.shields.io/badge/Router-Vue%20Router-green)
 
-### SSH
-```bash
+### Панель управления (pwa-panel)
+Административная панель: статистика, пользователи, обратная связь, настройки AI, управление агрегатором, мост сообщений. Лендинг платформы — `vsem72.ru`.
 
-```
+### Склад (warehouse-pwa)
+Веб-версия WMS: товары, остатки, приход, отгрузка, инвентаризация, перемещение, списание. Для ПК без установки APK.
 
-### Управление сервисами
-```bash
-systemctl status platform       # Rust API (порт 8080)
-systemctl status aggregator     # Агрегатор (порт 8090)
-systemctl status nginx          # Веб-сервер
-journalctl -u platform -f       # Логи бэкенда
-```
+### Колл-центр (call-center)
+Веб-версия колл-центра для операторов за ПК. Звонки, клиенты, чат.
 
-### PostgreSQL
-```bash
-# Подключение
-sudo -u postgres psql -d 
-
-# SSH-туннель (с Windows)
-ssh 
-# → localhost:5433
-```
-
-### Деплой
-```powershell
-# Интерактивный деплой
-.\deploy.ps1
-
-# Или через run.ps1
-.\run.ps1 -DeployBackend    # Только Rust бэкенд
-.\run.ps1 -DeployFull       # Полный деплой
-.\run.ps1 -DeployPanel      # Только PWA панель
-.\run.ps1 -DeployVkAds      # VK Mini App
-.\run.ps1 -DeployTg         # Telegram Mini Apps
-.\run.ps1 -SyncFeedback     # Синхронизация JSONL
-```
-
----
-
-## Android-приложения
-
-| Приложение | Папка исходников | APK | Технологии |
-|-----------|-----------------|-----|------------|
-| Работа | `D:\business-platform\котлин работа\` | `Работа.apk` (~21 MB) | Kotlin + Compose + Hilt + Room |
-| Объявления | `D:\business-platform\Объявления\` | `Объявления.apk` (~19 MB) | Kotlin + Compose + Hilt + Room |
-| Колл-центр | `call-center-kotlin\` | `Колл-центр.apk` (~17 MB) | Kotlin + Compose + Hilt + Room |
-| Менеджер продаж | `manager-sales-kotlin\` | `Менеджер продаж.apk` (~129 MB) | Kotlin + Compose + Hilt + Room + Яндекс Карты |
-| Склад | `warehouse-kotlin\` | `Склад.apk` (~8 MB) | Kotlin + Compose + CameraX + ML Kit |
-
-### Сборка APK
-```powershell
-$env:JAVA_HOME = "D:\jdk-21\jdk-21"
-cd D:\business-platform\котлин работа
-.\gradlew.bat assembleDebug
-```
-
-### Auto-update
-При запуске приложение проверяет `GET /api/v1/releases/latest/{app}` — если есть новая версия, предлагает обновление.
+### Менеджер продаж (manager-sales)
+Веб-версия CRM. Клиенты, заказы, задачи. Для менеджеров за ПК.
 
 ---
 
 ## Mini Apps
 
-| Платформа | Объявления | Работа |
-|-----------|-----------|--------|
-| **VK** | `https://vsem72.ru/vk-ads/` (App ID: 54664923) | `https://vsem72.ru/vk-rabota/` (App ID: 54665028) |
-| **OK** | `https://vsem72.ru/ok-ads/` | `https://vsem72.ru/ok-rabota/` |
-| **Telegram** | `https://vsem72.ru/tg-ads/` (@vsem_ads_bot) | `https://vsem72.ru/tg-rabota/` (@tyumen_jobs_bot) |
-| **VK Bridge** | `https://vsem72.ru/vk-bridge-ads/` | `https://vsem72.ru/vk-bridge-rabota/` |
+![VK](https://img.shields.io/badge/VK-Mini%20App-0077FF?logo=vk)
+![OK](https://img.shields.io/badge/OK-Mini%20App-ED8B00?logo=odnoklassniki)
+![Telegram](https://img.shields.io/badge/Telegram-Mini%20App-26A5E4?logo=telegram)
+
+Мини-приложения внутри соцсетей и мессенджеров. Открываются без установки — нажал и пользуешься.
+
+| Платформа | Что есть | Технология |
+|-----------|----------|-----------|
+| **VK** | Объявления + Работа | Vue 3 + VK Bridge |
+| **Одноклассники** | Объявления + Работа | Vue 3 + OK SDK |
+| **Telegram** | Объявления + Работа | Vue 3 + Telegram WebApp |
+| **Универсальные** | Объявления + Работа | VK Bridge (работает и в VK, и в OK) |
 
 ---
 
-## База данных (PostgreSQL)
+## Rust-сервисы (отдельные бинарники)
 
-**Схемы (schema-per-app):**
-- `auth` — пользователи, сессии, токены
-- `ads` — категории, объявления, медиа
-- `jobs` — вакансии, резюме, отклики
-- `chat` — беседы, сообщения, участники
-- `feedback` — отзывы, жалобы, обращения
-- `payments` — транзакции, статусы
-- `notifications` — уведомления
-- `devops` — релизы, метрики
-- `admin` — администраторы, права
-- `warehouse` — складской учёт
-- `integrations` — интеграции (Bitrix24)
-- `bridge` — мост сообщений
-- `communications` — коммуникации
+![Rust](https://img.shields.io/badge/Rust-Axum%200.7-orange?logo=rust)
+![SQLx](https://img.shields.io/badge/DB-SQLx-blue)
+![Tokio](https://img.shields.io/badge/Async-Tokio-green)
+
+### api-gateway (порт 8080)
+Единая точка входа для всех клиентов. Axum-сервер, JWT-авторизация, прокси дочерних сервисов, WebSocket для чатов. Вся бизнес-логика здесь.
+
+### Агрегатор (aggregator, порт 8090)
+![Parsing](https://img.shields.io/badge/Parsing-hh.ru%2FAvito%2FSuperJob%2FCIAN-blue)
+![AI](https://img.shields.io/badge/AI-YandexGPT%2FGigaChat-green)
+
+Парсинг внешних площадок: hh.ru, Avito, SuperJob, CIAN. Встроенные парсеры + универсальный HTML-парсер (CSS-селекторы) + парсер VK групп и Telegram каналов. AI-обогащение (YandexGPT/GigaChat). Авто-публикация в платформу.
+
+### Пул агентов (agent-pool, порт 8091)
+![AI](https://img.shields.io/badge/AI-Ollama-yellow)
+![ZIP](https://img.shields.io/badge/Distribution-ZIP-blue)
+
+Мультиагентная AI-платформа. Каждый домен — самодостаточный ZIP с ядром и промптами. Скачал → запустил → работает.
+
+**Домены:**
+- **Кодинг** — пишет код, рефакторит, проверяет безопасность, проектирует архитектуру, создаёт документацию
+- **Коммуникации** — анализирует email, ведёт чаты, управляет уведомлениями
+- **Офис** — планирует задачи, управляет календарём, создаёт документы, ведёт профили сотрудников
+
+### Аудио-сервис (audio-service)
+![Zig](https://img.shields.io/badge/Zig-0.13-F7A41D?logo=zig)
+![STT](https://img.shields.io/badge/STT-SaluteSpeech-blue)
+![TTS](https://img.shields.io/badge/TTS-GigaChat-green)
+
+Zig-бинарник для распознавания речи (SaluteSpeech), синтеза (GigaChat) и анализа тональности. Общается с gateway через JSON по stdin/stdout.
 
 ---
 
 ## Интеграции
 
-### Битрикс24
-- **Подход:** исходящий вебхук (пользователь вставляет URL) → прокси через Rust
-- **Эндпоинты:** connect, status, disconnect, sync, activities
-- **OAuth 2.0:** запланирован (для подключения в один клик)
-
-### 1С
-- Синхронизация номенклатуры склада
-- Выгрузка документов (приход, отгрузка)
-
-### Telegram
-- Боты: `@vsem_ads_bot`, `@tyumen_jobs_bot`
-- Message Bridge: двусторонняя переписка между чатами платформы и Telegram
-
-### AI
-- YandexGPT Lite (1000 запросов/день)
-- GigaChat (100 запросов/день)
-- Управление через PWA панель `/panel/admin/ai`
+| Интеграция | Что делает |
+|-----------|-----------|
+| **Битрикс24** | Синхронизация контактов и сделок, добавление активностей звонка |
+| **1С** | Синхронизация номенклатуры склада, выгрузка документов (приход/отгрузка) |
+| **Telegram** | Боты для Mini Apps + Message Bridge (чат платформы ↔ Telegram) |
+| **AI** | YandexGPT Lite, GigaChat (управляются через PWA) |
+| **Т-Банк** | СБП, QR-коды для оплаты |
 
 ---
 
-## Монетизация
+## База данных
 
-- **Схема:** реквизиты в PWA → клиент переводит сам → кнопка «Я оплатил»
-- **СБП:** Т-Банк API (QR-код)
-- **Цены:** настраиваются админом в PWA
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
+![Schema](https://img.shields.io/badge/Schemas-13-blue)
+
+13 схем в PostgreSQL: `auth`, `ads`, `jobs`, `chat`, `feedback`, `payments`, `notifications`, `devops`, `admin`, `warehouse`, `integrations`, `bridge`, `communications`. Изоляция данных через schema-per-app.
 
 ---
 
-## Важные правила
+## Инфраструктура
 
-1. **Docker запрещён** — не использовать, не предлагать
-2. **Schema-per-app** — изоляция данных через схемы PostgreSQL
-3. **Thin client** — Android только UI + Room-кэш, вся логика на бэкенде
-4. **Только Тюмень** — все сервисы ориентированы на Тюмень
-5. **Русский язык** — весь код, комментарии, документация на русском
-6. **versionCode** — увеличивать на +1 перед каждой сборкой APK
+![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu)
+![Nginx](https://img.shields.io/badge/Nginx-1.24-009639?logo=nginx)
+![Systemd](https://img.shields.io/badge/Systemd-Units-green)
+
+```bash
+systemctl status platform       # Rust API (порт 8080)
+systemctl status aggregator     # Парсеры (порт 8090)
+systemctl status agent-pool     # AI-агенты (порт 8091)
+systemctl status nginx          # Веб-сервер
+```
+
+Production: `https://vsem72.ru/`
 
 ---
 
 ## Лицензия
 
-© 2026 Business Platform. Все права защищены.
+Apache 2.0
